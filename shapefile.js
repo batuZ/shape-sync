@@ -251,7 +251,7 @@ const types = {
 }
 
 class Shapefile {
-    constructor(shp, opt) {
+    constructor(shp, opt = {}) {
         if (fs.existsSync(shp)) {
             let dbf_path = shp.substring(0, shp.length - 4) + ".dbf"
             if (fs.existsSync(dbf_path)) {
@@ -263,7 +263,7 @@ class Shapefile {
                 // 在这里 https://nodejs.org/api/util.html#class-utiltextdecoder
                 // 根据文件头判断编码
                 let LDID = this._dbf.readUint8(29)
-                opt ||= LDID === 77 ? 'gbk' : 'utf-8'
+                opt.encoding ||= LDID === 77 ? 'gbk' : 'utf-8'
 
                 const TDecoder = new TextDecoder(opt.encoding)
                 this._decode = TDecoder.decode.bind(TDecoder)
