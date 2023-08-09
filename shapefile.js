@@ -251,7 +251,7 @@ const types = {
 }
 
 class Shapefile {
-    constructor(shp, opt = {}) {
+    constructor(shp, opt = { encoding: 'utf-8' }) {
         if (fs.existsSync(shp)) {
             let dbf_path = shp.substring(0, shp.length - 4) + ".dbf"
             if (fs.existsSync(dbf_path)) {
@@ -259,11 +259,12 @@ class Shapefile {
                 //http://www.dbase.com/Knowledgebase/INT/db7_file_fmt.htm
                 this._dbf = fs.readFileSync(dbf_path)
 
+                // 这个判断不严谨，先去掉
                 // 如果'gbk'和'utf-8'都乱码，就要自己去找编码了，设置到opt里 {encoding: 'utf-16le'}
                 // 在这里 https://nodejs.org/api/util.html#class-utiltextdecoder
                 // 根据文件头判断编码
-                let LDID = this._dbf.readUint8(29)
-                opt.encoding ||= LDID === 77 ? 'gbk' : 'utf-8'
+                // let LDID = this._dbf.readUint8(29)
+                // opt.encoding ||= LDID === 77 ? 'gbk' : 'utf-8'
 
                 const TDecoder = new TextDecoder(opt.encoding)
                 this._decode = TDecoder.decode.bind(TDecoder)
