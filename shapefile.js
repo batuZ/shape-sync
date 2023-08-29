@@ -251,7 +251,7 @@ const types = {
 }
 
 class Shapefile {
-    constructor(shp, opt = { encoding: 'utf-8' }) {
+    constructor(shp, opt = {}) {
         if (fs.existsSync(shp)) {
             let dbf_path = shp.substring(0, shp.length - 4) + ".dbf"
             if (fs.existsSync(dbf_path)) {
@@ -259,16 +259,17 @@ class Shapefile {
                 //http://www.dbase.com/Knowledgebase/INT/db7_file_fmt.htm
                 this._dbf = fs.readFileSync(dbf_path)
 
-                // 这个判断不严谨，先去掉
+                // 尝试判断编码
                 // 如果'gbk'和'utf-8'都乱码，就要自己去找编码了，设置到opt里 {encoding: 'utf-16le'}
                 // 在这里 https://nodejs.org/api/util.html#class-utiltextdecoder
-                // 根据文件头判断编码
-                // let LDID = this._dbf.readUint8(29)
-                // opt.encoding ||= LDID === 77 ? 'gbk' : 'utf-8'
+                let LDID = this._dbf.readUint8(29)
+                opt.encoding ||= LDID === 77 ? 'gbk' : 'utf-8'
 
                 const TDecoder = new TextDecoder(opt.encoding)
                 this._decode = TDecoder.decode.bind(TDecoder)
                 this.feature_count = this._dbf.readUint32LE(4)
+                this._headLength = this._dbf.readUint16LE(8)
+                this._recordLength = this._dbf.readUint16LE(10)
                 this._fields = [];
                 for (let i = 32; this._dbf.readUint8(i) !== 0x0d; i += 32) {
                     for (var j = 0; j < 11; ++j) {
@@ -317,8 +318,7 @@ class Shapefile {
     get(index = 0) {
         let shp_start = this._shp_indexies[index] + 8
         let geometry = parsers[this._shp.readInt32LE(32)](this._shp, shp_start)
-
-        let dbf_start = this._dbf.readUint16LE(8) + this._dbf.readUint16LE(10) * index
+        let dbf_start = this._headLength + this._recordLength * index + 1
         let properties = {}
         for (let fi = 0; fi < this._fields.length; fi++) {
             const f = this._fields[fi]
